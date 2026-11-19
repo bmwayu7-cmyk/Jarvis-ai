@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#071525">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>JARVIS AI</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#071525;color:#e8f5ff;
+ font-family:Arial,sans-serif;
+}
+header{text-align:center;padding:25px 10px}
+h1{letter-spacing:8px;color:#63ceff}
+.core{
+ width:110px;height:110px;margin:20px auto;
+ border:2px solid #4bcaff;border-radius:50%;
+ display:grid;place-items:center;font-size:35px;
+ box-shadow:0 0 30px #087bb9;
+ animation:glow 2s infinite;
+}
+@keyframes glow{
+ 50%{box-shadow:0 0 48px #087bb9}
+}
+main{max-width:650px;margin:auto;padding:12px}
+.panel{
+ background:#10243a;border:1px solid #24506c;
+ border-radius:16px;padding:16px;margin-bottom:15px
+}
+#chat{height:320px;overflow:auto}
+.msg{padding:12px;border-radius:12px;
+ margin:9px 0;overflow-wrap:anywhere}
+.user{background:#155078;text-align:right}
+.bot{background:#20394e}
+.controls{display:flex;gap:8px;margin-top:12px}
+input{
+ flex:1;min-width:0;padding:13px;
+ border-radius:10px;border:1px solid #367c9f;
+ background:#081827;color:white;font-size:16px
+}
+button{
+ border:0;border-radius:10px;padding:12px;
+ background:#087eb9;color:white;font-size:14px
+}
+.status{color:#65e2bb;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+ <div class="status">● JARVIS SYSTEM ONLINE</div>
+ <h1>J.A.R.V.I.S.</h1>
+ <div>Personal AI Assistant</div>
+ <div class="core">J</div>
+ <div class="status" id="status">Ready for commands</div>
+</header>
+
+<main>
+ <section class="panel">
+  <b>AI CONSOLE</b>
+  <div id="chat"></div>
+  <div class="controls">
+   <input id="prompt" placeholder="Talk to JARVIS...">
+   <button id="send">SEND</button>
+  </div>
+  <div class="controls">
+   <button id="speak">🔊 Speak</button>
+   <button id="clear">Clear</button>
+  </div>
+ </section>
+ <section class="panel">
+  <b>SYSTEM STATUS</b>
+  <p id="clock"></p>
+  <p class="status">Version: 1.0</p>
+  <p class="status">Offline shell: Ready</p>
+ </section>
+</main>
+
+<script>
+const chat=document.getElementById("chat");
+const input=document.getElementById("prompt");
+const status=document.getElementById("status");
+let messages=[];
+
+try{
+ messages=JSON.parse(localStorage.getItem("jarvis")||"[]");
+}catch(e){messages=[]}
+
+function display(text,type,save=true){
+ const d=document.createElement("div");
+ d.className="msg "+type;
+ d.textContent=text;
+ chat.appendChild(d);
+ chat.scrollTop=chat.scrollHeight;
+ if(save){
+  messages.push({text,type});
+  messages=messages.slice(-40);
+  localStorage.setItem("jarvis",JSON.stringify(messages));
+ }
+}
+messages.forEach(m=>display(m.text,m.type,false));
+
+function answer(q){
+ const s=q.toLowerCase();
+ if(s.includes("hello")||s.includes("hi"))
+  return "Hello! JARVIS is online. How may I help?";
+ if(s.includes("your name"))
+  return "I am JARVIS, your personal AI assistant.";
+ if(s.includes("time"))
+  return "Current time: "+new Date().toLocaleTimeString();
+ if(s.includes("date"))
+  return "Today's date: "+new Date().toLocaleDateString();
+ if(s.includes("who created"))
+  return "You are building me as your personal AI.";
+ return "Command received. My real AI brain is planned for Phase 2.";
+}
+
+function send(){
+ const q=input.value.trim();
+ if(!q)return;
+ display(q,"user");
+ input.value="";
+ status.textContent="Processing...";
+ setTimeout(()=>{
+  const a=answer(q);
+  display(a,"bot");
+  status.textContent="System online";
+ },300);
+}
+document.getElementById("send").onclick=send;
+input.addEventListener("keydown",e=>{
+ if(e.key==="Enter")send();
+});
+document.getElementById("speak").onclick=()=>{
+ const last=messages.filter(m=>m.type==="bot").pop();
+ if(last && "speechSynthesis" in window){
+  speechSynthesis.cancel();
+  speechSynthesis.speak(new SpeechSynthesisUtterance(last.text));
+ }
+};
+document.getElementById("clear").onclick=()=>{
+ messages=[];
+ localStorage.removeItem("jarvis");
+ chat.innerHTML="";
+};
+setInterval(()=>{
+ document.getElementById("clock").textContent=
+ new Date().toLocaleString();
+},1000);
+
+if("serviceWorker" in navigator){
+ navigator.serviceWorker.register("./sw.js");
+}
+</script>
+</body>
+</html>
